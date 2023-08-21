@@ -1,0 +1,28 @@
+
+# sensor module configuration
+config API_RESPONSE_PARSER_MODULE
+    bool "Enable Sensor Module"
+    default y 
+
+# HTTP client module configuration
+config HTTP_CLIENT_MODULE
+    bool "Enable HTTP Client Module"
+    default y
+
+# Shared data module configuration
+config SHARED_DATA_MODULE
+    bool "Enable Shared Data Module"
+    default y
+
+# Sensor thread module configuration
+config SENSOR_THREAD_MODULE
+    bool "Enable Sensor Thread Module"
+    default y
+
+config BOARD_THINGY91_NRF9160NS
+    bool "Enable Thingy91 Board"
+    default n
+      
+menu "Zephyr Kernel"
+    source "Kconfig.zephyr"
+    endmenu

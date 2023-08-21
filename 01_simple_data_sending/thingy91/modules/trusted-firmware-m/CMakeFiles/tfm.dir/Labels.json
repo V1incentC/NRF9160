@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/CMakeFiles/tfm"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/CMakeFiles/tfm.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/CMakeFiles/tfm-complete.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-build.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-configure.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-download.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-install.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-mkdir.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-patch.rule"
+		},
+		{
+			"file" : "D:/Root/Github_projects/NRF9160/01_simple_data_sending/thingy91/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"tfm"
+		],
+		"name" : "tfm"
+	}
+}
