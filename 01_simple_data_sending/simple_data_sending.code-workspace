@@ -1,15 +1,12 @@
 {
 	"folders": [
 		{
+			"name": "queue_to_nvs_test",
+			"path": "../queue_to_nvs_test"
+		},
+		{
+			"name": "01_simple_data_sending",
 			"path": "."
-		},
-		{
-			"name": "bme680_2",
-			"path": "../../cell_fund/v2.4.0/lesson8/bme680_2"
-		},
-		{
-			"name": "nrf91_simple_tracker",
-			"path": "../../cell_fund/v2.4.0/lesson8/nrf91_simple_tracker"
 		}
 	],
 	"settings": {
@@ -30,9 +27,14 @@
 			"parser_url.h": "c",
 			"http_client.h": "c",
 			"modem_info.h": "c",
-			"thingy91.h": "c"
+			"thingy91.h": "c",
+			"api_response_parser.h": "c"
 		},
 		"nrf-connect.applications": [],
+		"nrf-connect.topdir": "${nrf-connect.sdk:2.4.0}",
+		"nrf-connect.debugging.bindings": {
+			"${workspaceFolder}/build": "Launch queue_to_nvs_test\\build"
+		}
 	},
 	"extensions": {
 		"recommendations": [
@@ -42,6 +44,18 @@
 			"ms-vscode.vscode-serial-monitor",
 			"marus25.cortex-debug",
 			"donjayamanne.python-environment-manager"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "nrf-connect",
+				"request": "launch",
+				"name": "Launch queue_to_nvs_test\\build",
+				"config": "${workspaceFolder}/build",
+				"runToEntryPoint": "main"
+			}
 		]
 	}
 }
