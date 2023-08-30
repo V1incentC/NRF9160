@@ -12,12 +12,13 @@
 #include <zephyr/fs/nvs.h>
 #include <zephyr/data/json.h>
 #include <zephyr/random/rand32.h>
+#include <string.h>
 
 #define MSGQ_ID 1
 #define QUEUE_SIZE_ID 15  /* ID used to store the queue size in NVS */
 static struct nvs_fs fs;
-#define JSON_UPDATES_NUM 10
-
+#define JSON_UPDATES_NUM 20
+#define BATCH_SIZE 5
 #define NVS_PARTITION storage_partition
 #define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
@@ -25,7 +26,6 @@ static struct nvs_fs fs;
 
 K_MUTEX_DEFINE(my_mutex);
 struct k_msgq saved_msq;
-
 /* Define a struct to describe the structure of an update object */
 struct update {
     char created_at[32];
@@ -42,28 +42,44 @@ struct update {
     int Elevation;
     char Status[128];
 };
+/* Define a struct to describe the structure of an update object */
+struct update_json {
+    char* created_at;
+    int field1;
+    int field2;
+    int field3;
+    int field4;
+    int field5;
+    int field6;
+    int field7;
+    int field8;
+    int Latitude;
+    int Longitude;
+    int Elevation;
+    char* Status;
+};
 K_MSGQ_DEFINE(my_msgq, sizeof(struct update), JSON_UPDATES_NUM, 4);
 /* Define a descriptor to map the JSON fields to the update struct */
 static const struct json_obj_descr update_descr[] = {
-    JSON_OBJ_DESCR_PRIM(struct update, created_at, JSON_TOK_STRING),
-    JSON_OBJ_DESCR_PRIM(struct update, field1, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field2, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field3, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field4, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field5, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field6, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field7, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, field8, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, Latitude, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, Longitude, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, Elevation, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct update, Status, JSON_TOK_STRING),
+    JSON_OBJ_DESCR_PRIM(struct update_json, created_at, JSON_TOK_STRING),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field1, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field2, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field3, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field4, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field5, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field6, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field7, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, field8, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, Latitude, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, Longitude, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, Elevation, JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct update_json, Status, JSON_TOK_STRING),
 };
 
 /* Define a struct to describe the structure of the top-level object */
 struct my_data {
-    char write_api_key[32];
-    struct update updates[JSON_UPDATES_NUM];
+    char* write_api_key;
+    struct update_json updates[JSON_UPDATES_NUM];
     size_t updates_len;
 };
 
@@ -209,8 +225,8 @@ void write_thread(void) {
             .field7 =  1050,
             .field8 =  1050,
             .Latitude = 90,
-            .Longitude =  180,
-            .Elevation =  10000,
+            .Longitude =  NULL,
+            .Elevation =  NULL,
             .Status = "random status"
         };
 
@@ -218,87 +234,110 @@ void write_thread(void) {
         write_to_buffer(&data);
         printk("Wrote update\n");
 
-        k_sleep(K_SECONDS(1));
+        // k_sleep(K_SECONDS(1));
+        k_msleep(1000);
+    }
+}
+void encode_batch(struct my_data *data, int start, int end, char *json_str, size_t json_str_len) {
+    /* Encode the current batch of updates into a JSON string */
+    int len = json_obj_encode_buf(my_data_descr,
+                                  ARRAY_SIZE(my_data_descr),
+                                  data,
+                                  json_str,
+                                  json_str_len);
+    if (len < 0) {
+        printk("Failed to encode data\n");
+    } else {
+        printk("JSON string: %s\n", json_str);
+    }
+
+    /* Free allocated memory for the current batch of updates */
+    for (int j = start; j < end; j++) {
+        k_free(data->updates[j].created_at);
+        k_free(data->updates[j].Status);
     }
 }
 
+void copy_update(struct update_json *dst, struct update *src) {
+    /* Allocate memory for the created_at and Status fields */
+    dst->created_at = k_malloc(strlen(src->created_at) + 1);
+    if (dst->created_at == NULL) {
+        printk("Failed to allocate memory\n");
+        return;
+    }
+    dst->Status = k_malloc(strlen(src->Status) + 1);
+    if (dst->Status == NULL) {
+        printk("Failed to allocate memory\n");
+        return;
+    }
+
+    /* Copy data from the src struct into the dst struct */
+    strcpy(dst->created_at, src->created_at);
+    dst->field1 = src->field1;
+    dst->field2 = src->field2;
+    dst->field3 = src->field3;
+    dst->field4 = src->field4;
+    dst->field5 = src->field5;
+    dst->field6 = src->field6;
+    dst->field7 = src->field7;
+    dst->field8 = src->field8;
+    dst->Latitude = src->Latitude;
+    dst->Longitude = src->Longitude;
+    dst->Elevation = src->Elevation;
+    strcpy(dst->Status, src->Status);
+}
+
 void read_thread(void) {
+    printk("Started read thread\n");
     while (1) {
-        k_sleep(K_SECONDS(7));
         /* Create a my_data struct and populate it with data */
         struct my_data data = {
             .write_api_key = "0M1HAJYG2ZUGBOTX",
-            
         };
 
         /* Dequeue all items from the message queue and add them to the updates array */
         int i = 0;
         struct update rx_data;
         while (read_data(&rx_data) == 0) {
-            data.updates[i] = rx_data;
+            copy_update(&data.updates[i], &rx_data);
+
             i++;
             if (i >= ARRAY_SIZE(data.updates)) {
                 break;
             }
-        }
-        printk("Read %d updates\n", i);
-        /* Encode the data into a JSON string */
-        // char json_str[6024];
-        // int len = json_obj_encode_buf(my_data_descr,
-        //                               ARRAY_SIZE(my_data_descr),
-        //                               &data,
-        //                               json_str,
-        //                               sizeof(json_str));
-        // if (len < 0) {
-        //     printk("Failed to encode data\n");
-        // } else {
-        //     printk("JSON string: %s\n", json_str);
-        // }
 
-        
+            /* Encode the current batch of updates if we've reached the batch size */
+            if (i % BATCH_SIZE == 0) {
+                data.updates_len = BATCH_SIZE;
+
+                /* Create a buffer to hold the encoded JSON string */
+                char json_str[2500];
+                encode_batch(&data, i - BATCH_SIZE, i, json_str, sizeof(json_str));
+
+                /* Use the encoded JSON string */
+                // ...
+            }
+        }
+
+        /* Encode any remaining updates that didn't fit into a full batch */
+        if (i % BATCH_SIZE != 0) {
+            data.updates_len = i % BATCH_SIZE;
+
+            /* Create a buffer to hold the encoded JSON string */
+            char json_str[2500];
+            encode_batch(&data, i - (i % BATCH_SIZE), i, json_str, sizeof(json_str));
+
+            /* Use the encoded JSON string */
+            // ...
+        }
+        k_sleep(K_SECONDS(7));
     }
 }
+
 
 K_THREAD_DEFINE(write_tid, 6*1024, write_thread, NULL, NULL, NULL, 7, 0, 0);
 K_THREAD_DEFINE(read_tid, 8*1024, read_thread, NULL, NULL, NULL, 7, 0, 0);
 
-/* Define a struct to describe the structure of an item object */
-struct item {
-    int value;
-    char name[32];
-};
-
-/* Define a descriptor to map the JSON fields to the item struct */
-static const struct json_obj_descr item_descr[] = {
-    JSON_OBJ_DESCR_PRIM(struct item, value, JSON_TOK_NUMBER),
-    JSON_OBJ_DESCR_PRIM(struct item, name, JSON_TOK_STRING),
-};
-
-/* Define a struct to describe the structure of the top-level object */
-struct test_data {
-    int id;
-    struct item items[3];
-    size_t items_len;
-};
-
-/* Define a descriptor to map the top-level object's fields to the test_data struct */
-static const struct json_obj_descr test_data_descr[] = {
-    JSON_OBJ_DESCR_PRIM(struct test_data, id, JSON_TOK_NUMBER),
-    /* Use an array descriptor to map the items array */
-    JSON_OBJ_DESCR_OBJ_ARRAY(struct test_data,
-                         items,
-                         3,
-                         items_len,
-                         item_descr,
-                         ARRAY_SIZE(item_descr)),
-};
-/* Define a writer function that appends bytes to a buffer */
-int append_bytes(const char *bytes, size_t len, void *data)
-{
-    char *buf = data;
-    strncat(buf, bytes, len);
-    return 0;
-}
 int main(void) {
 
 	int rc = 0;
@@ -331,48 +370,9 @@ int main(void) {
 		printk("Flash Init failed\n");
 		return 0;
 	}
-	
-   struct test_data data = {
-        .id = 1,
-        .items = {
-            {
-                .value = 1,
-                .name = "Item 1",
-            },
-            {
-                .value = 2,
-                .name = "Item 2",
-            },
-            {
-                .value = 3,
-                .name = "Item 3",
-            },
-        },
-        /* Set the items_len field to the number of elements in the items array */
-        .items_len = ARRAY_SIZE(data.items)
-    };
 
-    char json_str[1056];
-    /* Encode the test_data structure into a JSON string using the json_obj_encode function */
-    int ret = json_obj_encode(test_data_descr, ARRAY_SIZE(test_data_descr), &data, append_bytes, json_str);
-    if (ret < 0) {
-        printk("Failed to encode data\n");
-        return;
-    }
-
-    /* Print the encoded JSON string */
-    printk("JSON string: %s\n", json_str);
-
-    // int data;
-    // while ((data = read_data()) != -1) {
-    //     printk("Got %d\n", data);
-    // }
-
-    // int id = 0;
-	// nvs_write(&fs, QUEUE_SIZE_ID, &id, sizeof(int));
-	// for (int i = 0; i < 5; i++) {
-	// 	write_to_buffer(i*3);
-	// }
-
-	//return 0;
+    printk("Started loading queue\n");
+    load_queue();
+    printk("Finished loading queue\n");
+    
 }
