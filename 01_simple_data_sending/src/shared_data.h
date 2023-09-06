@@ -10,6 +10,7 @@ struct shared_data {
     struct k_sem api_key_sem;
     struct k_sem http_response_sem;
     struct k_mutex url_mutex;
+    struct k_sem lte_connected;
     char response_buf[HTTP_RESPONSE_BUF_SIZE]; // Include response here
     int response_len;
     char api_key[17];

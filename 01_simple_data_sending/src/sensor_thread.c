@@ -4,6 +4,7 @@
 #include "shared_data.h"
 #include <stdio.h>
 #include <modem/modem_info.h>
+#include <modem/lte_lc.h>
 #ifdef CONFIG_BOARD_THINGY91_NRF9160NS
 #include "thingy91.h"
 #include <zephyr/drivers/sensor.h>
@@ -11,7 +12,7 @@
 
 #define STACKSIZE 4*1024
 #define THREAD_PRIORITY 5
-#define SLEEP_TIME K_MINUTES(10)
+#define SLEEP_TIME K_MINUTES(2)
 
 K_THREAD_STACK_DEFINE(sensor_thread_stack_area, STACKSIZE);
 struct k_thread sensor_thread_data;
@@ -40,8 +41,15 @@ void sensor_thread_send_func(void *arg1, void *arg2, void *arg3)
 	printk("Hello from sensor thread\n");
 
 	while (1) {
-        /* Wait for api_key to be received */
-        
+        int err;
+        printk("Sensor thread: connecting to network\n");
+        /* Activate LTE and connect to the LTE network */
+        err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_NORMAL);
+		if (err != 0){
+			printk("Failed to activate LTE");
+			break;
+		}
+		k_sem_take(&sd->lte_connected, K_FOREVER);
 		printk("Sensor thread: semaphore taken\n");
         #ifdef CONFIG_BOARD_THINGY91_NRF9160NS
         // Get Sensor Data
@@ -96,7 +104,7 @@ void sensor_thread_send_func(void *arg1, void *arg2, void *arg3)
 		
         
 		/* Send GET request and get response */
-		int err = http_client_send_get_request(url);
+		err = http_client_send_get_request(url);
 		if (err < 0) {
 			printk("Failed to get response from server, error:%d", err);
 			//return;
@@ -109,6 +117,12 @@ void sensor_thread_send_func(void *arg1, void *arg2, void *arg3)
 		printk("Received response (%d bytes):\n%s\n", sd->response_len, sd->response_buf);
         k_mutex_unlock(url_mutex);
 
+
+        err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_LTE);
+		if (err != 0){
+			printk("Failed to decativate LTE and enable GNSS functional mode");
+			break;
+		}
         k_sleep(SLEEP_TIME);
         
     }

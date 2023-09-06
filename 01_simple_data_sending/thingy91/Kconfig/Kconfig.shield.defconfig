@@ -1,5 +1,0 @@
-osource "d:/root/github_projects/cell_fund/v2.4.0/lesson8/bme680_2/boards/shields/*/Kconfig.defconfig"
-osource "d:/root/github_projects/cell_fund/v2.4.0/lesson8/https_client_async_test/boards/shields/*/Kconfig.defconfig"
-osource "d:/root/github_projects/cell_fund/v2.4.0/lesson8/https_client_clean/boards/shields/*/Kconfig.defconfig"
-osource "d:/root/github_projects/cell_fund/v2.4.0/lesson8/https_client/boards/shields/*/Kconfig.defconfig"
-osource "D:/nordicsemi/v2.4.0/nrf/boards/shields/*/Kconfig.defconfig"
