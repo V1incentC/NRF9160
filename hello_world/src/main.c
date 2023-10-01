@@ -13,6 +13,8 @@
 #include <nrf_modem_gnss.h>
 #include <dk_buttons_and_leds.h>
 #include <zephyr/logging/log.h>
+
+
 static K_SEM_DEFINE(lte_connected, 0, 1);
 static K_SEM_DEFINE(time_update_finished, 0, 1);
 LOG_MODULE_REGISTER(Lesson6_Exercise2, LOG_LEVEL_INF);
@@ -238,9 +240,9 @@ int main(void)
 	while(1)
 	{
 		k_sleep(K_SECONDS(2));
-		// int64_t unix_time_ms;
-		// struct tm date_time;
-		// char buf[64];
+		int64_t unix_time_ms;
+		struct tm date_time;
+		char buf[64];
 		// date_time_update_async(date_time_evt_handler);
 		// k_sem_take(&time_update_finished, K_MINUTES(10));
 		// date_time_now(&unix_time_ms);

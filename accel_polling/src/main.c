@@ -76,14 +76,14 @@ int main(void)
 	int ret = sensor_attr_set(dev, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &sensorVal);
 	printf("sensor_attr_set: %d\n", ret);
 
-	trig_drdy.type = SENSOR_TRIG_DATA_READY;
-	if (sensor_trigger_set(dev, &trig_drdy, trigger_handler)) {
-		printf("Trigger set error\n");
-	}
+	// trig_drdy.type = SENSOR_TRIG_DATA_READY;
+	// if (sensor_trigger_set(dev, &trig_drdy, trigger_handler)) {
+	// 	printf("Trigger set error\n");
+	// }
 
 	trig_x.type = SENSOR_TRIG_MOTION;
 
-	if (sensor_trigger_set(dev, &trig_x, trigger_handler)) {
+	if (sensor_trigger_set(dev, &trig_x, trigger_handler) < 0) {
 		printf("Trigger set error\n");
 		return;
 	}

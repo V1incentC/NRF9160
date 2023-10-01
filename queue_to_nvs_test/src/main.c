@@ -15,7 +15,7 @@
 #include <string.h>
 
 #define MSGQ_ID 1
-#define QUEUE_SIZE_ID 15  /* ID used to store the queue size in NVS */
+#define QUEUE_SIZE_ID 21  /* ID used to store the queue size in NVS */
 static struct nvs_fs fs;
 #define JSON_UPDATES_NUM 20
 #define BATCH_SIZE 5
@@ -189,6 +189,7 @@ void load_queue(void) {
         /* Nothing to read from NVS, return immediately */
         return;
     } else if (rc < 0) {
+        /* Nothing to read from NVS, return immediately */
         printk("Failed to read queue size from NVS\n");
         return;
     }
@@ -212,6 +213,7 @@ void load_queue(void) {
 }
 
 void write_thread(void) {
+    k_msleep(3000);
     while (1) {
         /* Create an update struct and populate it with random data */
         struct update data = {
@@ -288,6 +290,7 @@ void copy_update(struct update_json *dst, struct update *src) {
 }
 
 void read_thread(void) {
+    k_msleep(3100);
     printk("Started read thread\n");
     while (1) {
         /* Create a my_data struct and populate it with data */
@@ -335,11 +338,13 @@ void read_thread(void) {
 }
 
 
-K_THREAD_DEFINE(write_tid, 6*1024, write_thread, NULL, NULL, NULL, 7, 0, 0);
-K_THREAD_DEFINE(read_tid, 8*1024, read_thread, NULL, NULL, NULL, 7, 0, 0);
+K_THREAD_DEFINE(write_tid, 6*1024, write_thread, NULL, NULL, NULL, 7, 0, 3000);
+K_THREAD_DEFINE(read_tid, 8*1024, read_thread, NULL, NULL, NULL, 7, 0, 3100);
 
 int main(void) {
 
+    k_msleep(2000);
+    printk("Started main\n");
 	int rc = 0;
 	struct flash_pages_info info;
 
@@ -355,6 +360,7 @@ int main(void) {
 		return 0;
 	}
 	fs.offset = NVS_PARTITION_OFFSET;
+    fs.offset =  0xfa000;
 	rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
 	if (rc)
 	{
@@ -362,7 +368,7 @@ int main(void) {
 		return 0;
 	}
 	fs.sector_size = info.size;
-	fs.sector_count = 3U;
+	fs.sector_count = 6U;
 
 	rc = nvs_mount(&fs);
 	if (rc)
